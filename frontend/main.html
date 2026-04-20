@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Main Page</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Music Subscription App</h1>
+      <p>Welcome, <span id="userName">User</span></p>
+    </div>
+    <a href="#" id="logoutLink" class="logout-link">Logout</a>
+  </header>
+
+  <main class="main-layout">
+    <section class="card section-box">
+      <h2>User Area</h2>
+      <p><strong>Username:</strong> <span id="userAreaName">User</span></p>
+      <p><strong>Email:</strong> <span id="userAreaEmail">user@email.com</span></p>
+    </section>
+
+    <section class="card section-box">
+      <h2>Subscription Area</h2>
+      <div id="subscriptionList" class="song-list empty-box">
+        No subscriptions yet.
+      </div>
+    </section>
+
+    <section class="card section-box">
+      <h2>Query Area</h2>
+
+      <form id="queryForm" class="query-form">
+        <div class="grid-two">
+          <div>
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" />
+          </div>
+
+          <div>
+            <label for="year">Year</label>
+            <input type="number" id="year" name="year" />
+          </div>
+
+          <div>
+            <label for="artist">Artist</label>
+            <input type="text" id="artist" name="artist" />
+          </div>
+
+          <div>
+            <label for="album">Album</label>
+            <input type="text" id="album" name="album" />
+          </div>
+        </div>
+
+        <button type="submit">Query</button>
+      </form>
+
+      <p id="queryMessage" class="message error"></p>
+      <div id="queryResults" class="song-list"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
