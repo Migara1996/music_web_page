@@ -12,13 +12,29 @@ def create_subscriptions_table():
         table = dynamodb.create_table(
             TableName=TABLE_NAME,
             KeySchema=[
-                {"AttributeName": "email", "KeyType": "HASH"},
-                {"AttributeName": "song_key", "KeyType": "RANGE"}
+                {"AttributeName": "email", "KeyType": "HASH"}, # Partition Key
+                {"AttributeName": "song_key", "KeyType": "RANGE"} # Sort key - artist#album#title 
             ],
             AttributeDefinitions=[
                 {"AttributeName": "email", "AttributeType": "S"},
                 {"AttributeName": "song_key", "AttributeType": "S"}
+                #{"AttributeName": "album_title", "AttributeType": "S"}
             ],
+
+            # Local Secondary Index (LSI)
+            # LocalSecondaryIndexes=[
+            #     {
+            #         "IndexName": "album_title-index",
+            #         "KeySchema": [
+            #             {"AttributeName": "email", "KeyType": "HASH"},
+            #             {"AttributeName": "album_title", "KeyType": "RANGE"}
+            #         ],
+            #         "Projection": {
+            #             "ProjectionType": "ALL"
+            #         }
+            #     }
+            # ],
+
             ProvisionedThroughput={
                 "ReadCapacityUnits": 5,
                 "WriteCapacityUnits": 5

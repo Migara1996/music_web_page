@@ -1,4 +1,4 @@
-const API_BASE_URL = "YOUR_BACKEND_URL_HERE";
+const API_BASE_URL = "http://ec2-44-202-191-41.compute-1.amazonaws.com";
 
 function getCurrentPage() {
   return window.location.pathname.split("/").pop();

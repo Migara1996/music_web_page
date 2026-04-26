@@ -27,12 +27,15 @@ def build_item(song):
 
     item = {
         "artist": artist,
-        "year_album_title": f"{year}#{album}#{title}",
-        "album_year_title": f"{album}#{year}#{title}",
+        #"year_album_title": f"{year}#{album}#{title}",
+        "album_title": f"{album}#{title}",
+        #"album_year_title": f"{album}#{year}#{title}",
+        "year_title": f"{year}#{title}",
         "title": title,
-        "artist_album_year": f"{artist}#{album}#{year}",
-        "year": Decimal(year),
-        "album": album,
+        #"artist_album_year": f"{artist}#{album}#{year}",
+        "artist_album": f"{artist}#{album}",
+        #"year": Decimal(year),
+        #"album": album,
         "image_url": image_url
     }
 
@@ -53,8 +56,8 @@ def insert_songs(table, songs):
             )
 
             inserted_count += 1
-            print(f"Inserted: {item['artist']} | {item['year_album_title']}")
-
+            #print(f"Inserted: {item['artist']} | {item['year_album_title']}")
+            print(f"Inserted: {item['artist']} | {item['album_title']}")
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
 
@@ -62,7 +65,8 @@ def insert_songs(table, songs):
                 skipped_count += 1
                 print(
                     f"Skipped duplicate: {song['artist']} | "
-                    f"{song['year']}#{song['album']}#{song['title']}"
+                    #f"{song['year']}#{song['album']}#{song['title']}"
+                    f"{song['album']}#{song['title']}"
                 )
             else:
                 skipped_count += 1
