@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://ec2-44-202-191-41.compute-1.amazonaws.com";
+const API_BASE_URL = "http://music-project-alb-1291702250.us-east-1.elb.amazonaws.com";
 
 function getCurrentPage() {
   return window.location.pathname.split("/").pop();
