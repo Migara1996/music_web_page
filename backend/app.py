@@ -95,9 +95,9 @@ def make_song_key(song):
 def home():
     """
     Simple health-check route.
-    Useful for confirming the backend is running on EC2.
+    Useful for confirming the backend is running on ECS.
     """
-    return jsonify({"message": "EC2 Flask backend is running"}), 200
+    return jsonify({"message": "ECS Flask backend is running"}), 200
 
 
 @app.route("/login", methods=["POST"])
