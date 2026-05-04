@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://ec2-44-202-191-41.compute-1.amazonaws.com";
+const API_BASE_URL = "http://music-projectALB-834083227.us-east-1.elb.amazonaws.com";
 
 function getCurrentPage() {
   return window.location.pathname.split("/").pop();
@@ -13,9 +13,20 @@ function getUserSession() {
   return user ? JSON.parse(user) : null;
 }
 
-function clearUserSession() {
-  sessionStorage.removeItem("user");
+/////////////////////////////////////////////
+function clearLoginForm() {
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("loginPassword");
+
+  if (emailInput) emailInput.value = "";
+  if (passwordInput) passwordInput.value = "";
 }
+
+
+function clearUserSession() {
+  sessionStorage.clear();
+}
+////////////////////////////////////////////
 
 async function handleLogin(event) {
   event.preventDefault();
@@ -236,7 +247,9 @@ function setupMainPage() {
     logoutLink.addEventListener("click", function (event) {
       event.preventDefault();
       clearUserSession();
-      window.location.href = "login.html";
+      // window.location.href = "login.html";
+      window.location.replace("login.html");
+
     });
   }
 
@@ -251,6 +264,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const page = getCurrentPage();
 
   if (page === "login.html" || page === "") {
+    clearLoginForm();
+
     const loginForm = document.getElementById("loginForm");
     if (loginForm) loginForm.addEventListener("submit", handleLogin);
   }
@@ -262,5 +277,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (page === "main.html") {
     setupMainPage();
+  }
+});
+
+
+window.addEventListener("pageshow", function () {
+  const page = getCurrentPage();
+
+  if (page === "login.html" || page === "") {
+    clearLoginForm();
+  }
+
+  if (page === "main.html") {
+    const user = getUserSession();
+
+    if (!user) {
+      window.location.replace("login.html");
+    }
   }
 });
