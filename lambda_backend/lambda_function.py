@@ -3,6 +3,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from decimal import Decimal
+import re
 
 REGION = "us-east-1"
 
@@ -113,7 +114,12 @@ def subscribe(event):
     artist = data.get("artist", "").strip()
     album = data.get("album", "").strip()
     year = data.get("year")
-    image_url = data.get("image_url", "").strip()
+    
+    image_name = data.get("image_url", "").split("/")[-1]
+    result = re.sub(r'(?<!^)(?=[A-Z])', '_', image_name)
+    image_url = "https://a2-s3music-s.s3.us-east-1.amazonaws.com/artist-images/"+result
+
+ # "Image   Name.jpg" → "Image_Name.jpg"
 
     if not email or not title or not artist or not album or year is None:
         return response(400, {"message": "Missing required subscription fields"})
