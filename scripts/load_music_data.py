@@ -52,7 +52,7 @@ def insert_songs(table, songs):
 
             table.put_item(
                 Item=item,
-                ConditionExpression="attribute_not_exists(artist) AND attribute_not_exists(year_album_title)"
+                ConditionExpression="attribute_not_exists(artist) AND attribute_not_exists(album_title)"
             )
 
             inserted_count += 1
