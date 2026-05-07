@@ -6,7 +6,8 @@ import boto3
 from botocore.exceptions import ClientError
 
 REGION = "us-east-1"
-BUCKET_NAME = "a2-s3music"
+#BUCKET_NAME = "a2-s3music"
+BUCKET_NAME = "a2-s3music-v2"
 JSON_FILE = "2026a2_songs.json"
 DOWNLOAD_FOLDER = "downloaded_images"
 
@@ -21,11 +22,11 @@ def load_songs(file_path):
     raise ValueError("JSON format invalid: 'songs' key not found or is not a list.")
 
 
-def safe_file_name(text):
-    text = text.strip()
-    text = re.sub(r"[<>:\"/\\\\|?*]", "", text)
-    text = re.sub(r"\s+", "_", text)
-    return text
+# def safe_file_name(text):
+#     text = text.strip()
+#     text = re.sub(r"[<>:\"/\\\\|?*]", "", text)
+#     text = re.sub(r"\s+", "_", text)
+#     return text
 
 
 def get_file_extension_from_url(url):
@@ -90,10 +91,13 @@ def main():
                 print(f"Skipped duplicate artist image: {artist}")
                 continue
 
-            file_extension = get_file_extension_from_url(image_url)
-            safe_artist = safe_file_name(artist)
+            #file_extension = get_file_extension_from_url(image_url)
+            #safe_artist = safe_file_name(artist)
 
-            local_file_name = f"{safe_artist}{file_extension}"
+            safe_artist = image_url.split("/")[-1]
+
+            #local_file_name = f"{safe_artist}{file_extension}"
+            local_file_name = f"{safe_artist}"
             local_file_path = os.path.join(DOWNLOAD_FOLDER, local_file_name)
 
             s3_key = f"artist-images/{local_file_name}"
