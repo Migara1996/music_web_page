@@ -7,6 +7,12 @@ import re
 
 REGION = "us-east-1"
 
+S3_IMAGE_BASE_URL = "https://a2-s3music-s.s3.us-east-1.amazonaws.com/artist-images/"
+
+# Source: AWS Boto3 Documentation
+# Adapted from: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/dynamodb.html
+# Modified for: connecting to music application tables
+
 # DynamoDB connection
 dynamodb = boto3.resource("dynamodb", region_name=REGION)
 
@@ -114,12 +120,7 @@ def subscribe(event):
     artist = data.get("artist", "").strip()
     album = data.get("album", "").strip()
     year = data.get("year")
-    
-    image_name = data.get("image_url", "").split("/")[-1]
-    result = re.sub(r'(?<!^)(?=[A-Z])', '_', image_name)
-    image_url = "https://a2-s3music-s.s3.us-east-1.amazonaws.com/artist-images/"+result
-
- # "Image   Name.jpg" → "Image_Name.jpg"
+    image_url = data.get("image_url", "")
 
     if not email or not title or not artist or not album or year is None:
         return response(400, {"message": "Missing required subscription fields"})
@@ -229,6 +230,12 @@ def enrich_music_item(item):
 
     return item
 
+
+def convert_to_s3_image_url(image_url):
+    image_name = image_url.split("/")[-1]
+    # result = re.sub(r'(?<!^)(?=[A-Z])', '_', image_name)
+    return S3_IMAGE_BASE_URL + image_name
+
 def query_music(event):
 
     params = event.get("queryStringParameters") or {}
@@ -318,6 +325,9 @@ def query_music(event):
                 match = False
 
             if match:
+                enriched_item["image_url"] = convert_to_s3_image_url(
+                    enriched_item.get("image_url", "")
+                )
                 filtered_items.append(enriched_item)
 
         if not filtered_items:
