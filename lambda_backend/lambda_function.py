@@ -23,6 +23,10 @@ subscriptions_table = dynamodb.Table("subscriptions")
 
 
 def response(status, body):
+    """
+    Constructs a standardized API response for AWS Lambda proxy integration.
+    Adds CORS headers to allow cross-origin requests from the frontend domain.
+    """
     return {
         "statusCode": status,
         "headers": {
@@ -36,6 +40,10 @@ def response(status, body):
 
 
 def convert_decimal(value):
+    """
+    Recursively converts DynamoDB Decimal objects to Python int or float.
+    DynamoDB returns numbers as Decimal which are not JSON serializable.
+    """
     if isinstance(value, Decimal):
         if value % 1 == 0:
             return int(value)
@@ -44,6 +52,10 @@ def convert_decimal(value):
 
 
 def serialize_item(item):
+    """
+    Recursively traverses and serializes a DynamoDB item for JSON response.
+    Handles nested dicts, lists, and converts Decimal types to int/float.
+    """
     if isinstance(item, dict):
         return {k: serialize_item(v) for k, v in item.items()}
 
@@ -53,6 +65,10 @@ def serialize_item(item):
     return convert_decimal(item)
 
 def login(event):
+    """
+    Authenticates a user by email and password against DynamoDB.
+    Returns user profile on success, errors on failure.
+    """
     try:
         data = json.loads(event.get("body") or "{}")
 
@@ -81,6 +97,10 @@ def login(event):
         return response(500, {"message": e.response["Error"]["Message"]})
     
 def register(event):
+    """
+    Registers a new user with email, username, and password in DynamoDB.
+    Enforces email uniqueness via conditional write; returns 409 on conflict.
+    """
     try:
         data = json.loads(event.get("body") or "{}")
 
@@ -109,10 +129,18 @@ def register(event):
         return response(500, {"message": e.response["Error"]["Message"]})
     
 def make_song_key(song):
+    """
+    Generates a composite key for a song using artist, album, and title.
+    Format: artist#album#title.
+    """
     return f"{song['artist']}#{song['album']}#{song['title']}"
 
 
 def subscribe(event):
+    """
+    Subscribes a user to a specific song by storing email and song details in DynamoDB.
+    Uses email + composite song_key as primary key; prevents duplicate subscriptions with conditional write.
+    """
     data = json.loads(event.get("body") or "{}")
 
     email = data.get("email", "").strip()
@@ -158,6 +186,10 @@ def subscribe(event):
 
 
 def get_subscriptions(event):
+    """
+    Retrieves all subscribed songs for a given user email from DynamoDB.
+    Queries by partition key only; returns serialized list of subscriptions.
+    """
     params = event.get("queryStringParameters") or {}
     email = params.get("email", "").strip()
 
@@ -178,6 +210,10 @@ def get_subscriptions(event):
 
 
 def remove_subscription(event):
+    """
+    Removes a user subscription to a song by querying for the matching title/artist,
+    then deleting the item using the composite song_key as the sort key.
+    """
     data = json.loads(event.get("body") or "{}")
 
     email = data.get("email", "").strip()
@@ -213,6 +249,10 @@ def remove_subscription(event):
         return response(500, {"message": e.response["Error"]["Message"]})
     
 def split_first(value):
+    """
+    Splits a string at the first occurrence of '#' into two parts.
+    Returns an empty tuple if '#' is not present or input is empty.
+    """
     if not value or "#" not in value:
         return "", ""
 
@@ -220,6 +260,10 @@ def split_first(value):
 
 
 def enrich_music_item(item):
+    """
+    Enriches a music item by extracting album and year from composite sort keys.
+    Splits album#title and year#title patterns; adds album and year as top-level fields.
+    """
     item = serialize_item(item)
 
     album, _ = split_first(item.get("album_title", ""))
@@ -232,12 +276,20 @@ def enrich_music_item(item):
 
 
 def convert_to_s3_image_url(image_url):
+    """
+    Converts a legacy or relative image path to an S3 bucket URL.
+    Extracts the filename from the original URL and appends it to the base S3 endpoint.
+    """
     image_name = image_url.split("/")[-1]
     # result = re.sub(r'(?<!^)(?=[A-Z])', '_', image_name)
     return S3_IMAGE_BASE_URL + image_name
 
 def query_music(event):
-
+    """
+    Handles multi-criteria music search with support for artist, album, title, and year filters.
+    Dynamically selects base table query, LSI (album-index), or GSI (title-index) based on provided parameters.
+    Enriches results with extracted album/year fields and converts image URLs to S3 format.
+    """
     params = event.get("queryStringParameters") or {}
 
     title = params.get("title", "").strip()
@@ -346,6 +398,11 @@ def query_music(event):
         })
        
 def lambda_handler(event, context):
+    """
+    Main Lambda entry point that routes incoming API requests to the appropriate handler function.
+    Maps HTTP method + rawPath combinations to login, register, subscribe, subscriptions, remove, and query endpoints.
+    Returns a default health-check response for unhandled routes.
+    """
     path = event["rawPath"]
     method = event["requestContext"]["http"]["method"]
 
