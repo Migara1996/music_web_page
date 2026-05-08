@@ -148,7 +148,7 @@ def subscribe(event):
     artist = data.get("artist", "").strip()
     album = data.get("album", "").strip()
     year = data.get("year")
-    image_url = data.get("image_url", "")
+    image_url = data.get("image_url", "").strip()
 
     if not email or not title or not artist or not album or year is None:
         return response(400, {"message": "Missing required subscription fields"})
