@@ -1,10 +1,24 @@
 import boto3
 from botocore.exceptions import ClientError
 
+# AWS region where DynamoDB table can create
 REGION = "us-east-1"
+# Table name
 TABLE_NAME = "music"
 
+# Source: GitHub Repository - Rachel Hagerman
+# Adapted from: https://github.com/awsdocs/aws-doc-sdk-examples/blob/ee9be1b447b7036892505d36dea33b2e2409b422/python/example_code/dynamodb/GettingStarted/scenario_getting_started_movies.py#L101
+# Modified for: creating music table and defining Primary key, LSI & GSI
+
+
 def create_music_table():
+    """
+    Creates the 'music' table in DynamoDB with a composite primary key, 
+    one Local Secondary Index (LSI), and one Global Secondary Index (GSI).
+    
+    The schema is designed to prevent data overwrites (lossless) and support 
+    the specific query patterns required for the music subscription app.
+    """
     dynamodb = boto3.resource("dynamodb", region_name=REGION)
 
     try:
@@ -17,8 +31,7 @@ def create_music_table():
                     "AttributeName": "artist", # Partition key
                     "KeyType": "HASH"
                 },
-                {
-                    #"AttributeName": "year_album_title", # Sort key
+                {                    
                     "AttributeName": "album_title", # Sort key
                     "KeyType": "RANGE"
                 }
@@ -26,13 +39,10 @@ def create_music_table():
 
             # Attributes
             AttributeDefinitions=[
-                {"AttributeName": "artist", "AttributeType": "S"},
-                #{"AttributeName": "year_album_title", "AttributeType": "S"},
-                {"AttributeName": "album_title", "AttributeType": "S"},
-                #{"AttributeName": "album_year_title", "AttributeType": "S"},
+                {"AttributeName": "artist", "AttributeType": "S"},                
+                {"AttributeName": "album_title", "AttributeType": "S"},                
                 {"AttributeName": "year_title", "AttributeType": "S"},
-                {"AttributeName": "title", "AttributeType": "S"},
-                #{"AttributeName": "artist_album_year", "AttributeType": "S"}
+                {"AttributeName": "title", "AttributeType": "S"},                
                 {"AttributeName": "artist_album", "AttributeType": "S"}
             ],
 
@@ -41,9 +51,8 @@ def create_music_table():
                 {
                     "IndexName": "album-index",
                     "KeySchema": [
-                        {"AttributeName": "artist", "KeyType": "HASH"},
-                        #{"AttributeName": "album_year_title", "KeyType": "RANGE"}
-                        {"AttributeName": "year_title", "KeyType": "RANGE"}
+                        {"AttributeName": "artist", "KeyType": "HASH"}, # LSI PK must be the main PK
+                        {"AttributeName": "year_title", "KeyType": "RANGE"} # LSI Sort Key
                     ],
                     "Projection": {
                         "ProjectionType": "ALL"
@@ -56,9 +65,8 @@ def create_music_table():
                 {
                     "IndexName": "title-index",
                     "KeySchema": [
-                        {"AttributeName": "title", "KeyType": "HASH"},
-                        #{"AttributeName": "artist_album_year", "KeyType": "RANGE"}
-                        {"AttributeName": "artist_album", "KeyType": "RANGE"}
+                        {"AttributeName": "title", "KeyType": "HASH"}, # GSI PK
+                        {"AttributeName": "artist_album", "KeyType": "RANGE"} # GSI SK
                     ],
                     "Projection": {
                         "ProjectionType": "ALL"
@@ -69,7 +77,7 @@ def create_music_table():
                     }
                 }
             ],
-
+            # Set the read/write capacity units
             ProvisionedThroughput={
                 "ReadCapacityUnits": 5,
                 "WriteCapacityUnits": 5

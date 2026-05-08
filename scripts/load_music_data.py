@@ -3,12 +3,19 @@ import boto3
 from botocore.exceptions import ClientError
 from decimal import Decimal
 
-REGION = "us-east-1"
-TABLE_NAME = "music"
-JSON_FILE = "2026a2_songs.json"
+REGION = "us-east-1" # AWS region
+TABLE_NAME = "music" # Table name
+JSON_FILE = "2026a2_songs.json" # Music data file 
 
 
 def load_json_file(file_path):
+    """
+    Opens and parses the local JSON file. Validates that the expected 'songs' 
+    key exists and contains a list of data.
+    
+    Adapted from: Python Standard Library - json module documentation
+    (https://docs.python.org/3/library/json.html)
+    """
     with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)
 
@@ -19,6 +26,11 @@ def load_json_file(file_path):
 
 
 def build_item(song):
+    """
+    Transforms raw JSON song data into a format that aligns with the DynamoDB schema.
+    This creates composite attributes (using '#' as a delimiter) to support 
+    advanced querying and prevent data loss.
+    """
     title = str(song["title"]).strip()
     artist = str(song["artist"]).strip()
     album = str(song["album"]).strip()
@@ -27,15 +39,10 @@ def build_item(song):
 
     item = {
         "artist": artist,
-        #"year_album_title": f"{year}#{album}#{title}",
         "album_title": f"{album}#{title}",
-        #"album_year_title": f"{album}#{year}#{title}",
         "year_title": f"{year}#{title}",
         "title": title,
-        #"artist_album_year": f"{artist}#{album}#{year}",
         "artist_album": f"{artist}#{album}",
-        #"year": Decimal(year),
-        #"album": album,
         "image_url": image_url
     }
 
@@ -43,6 +50,13 @@ def build_item(song):
 
 
 def insert_songs(table, songs):
+    """
+    Iterates through the list of songs and attempts to upload them to DynamoDB.
+    Uses a ConditionExpression to ensure no data is accidentally overwritten.
+    
+    Adapted from: Boto3 Documentation - Table.put_item
+    (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb/table/put_item.html)
+    """
     inserted_count = 0
     skipped_count = 0
 
@@ -88,6 +102,9 @@ def insert_songs(table, songs):
 
 
 def main():
+    """
+    Initializes the Boto3 resource and orchestrates the data loading process.
+    """
     dynamodb = boto3.resource("dynamodb", region_name=REGION)
     table = dynamodb.Table(TABLE_NAME)
 

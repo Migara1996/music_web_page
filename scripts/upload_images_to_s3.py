@@ -5,14 +5,20 @@ import requests
 import boto3
 from botocore.exceptions import ClientError
 
-REGION = "us-east-1"
-#BUCKET_NAME = "a2-s3music"
-BUCKET_NAME = "a2-s3music-v2"
-JSON_FILE = "2026a2_songs.json"
-DOWNLOAD_FOLDER = "downloaded_images"
+REGION = "us-east-1" # AWS region 
+BUCKET_NAME = "a2-s3music" # Bucket Name
+JSON_FILE = "2026a2_songs.json" # music file
+DOWNLOAD_FOLDER = "downloaded_images" # Folder that saves downloaded images
 
 
 def load_songs(file_path):
+    """
+    Parses the JSON file to retrieve the list of song objects.
+    Includes validation to ensure the 'songs' key exists and is iterable.
+    
+    Source: Python json module documentation 
+    (https://docs.python.org/3/library/json.html)
+    """
     with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)
 
@@ -21,14 +27,7 @@ def load_songs(file_path):
 
     raise ValueError("JSON format invalid: 'songs' key not found or is not a list.")
 
-
-# def safe_file_name(text):
-#     text = text.strip()
-#     text = re.sub(r"[<>:\"/\\\\|?*]", "", text)
-#     text = re.sub(r"\s+", "_", text)
-#     return text
-
-
+# Extract file extensions of images
 def get_file_extension_from_url(url):
     lower_url = url.lower()
     if lower_url.endswith(".png"):
@@ -41,16 +40,29 @@ def get_file_extension_from_url(url):
         return ".webp"
     return ".jpg"
 
-
+# Download image by using given image_url in json file
 def download_image(url, local_path):
+    """
+    Streams binary content from the web and saves it to a local file.
+    
+    Source: Requests Library - Binary Response Content 
+    (https://requests.readthedocs.io/en/latest/user/quickstart/#binary-response-content)
+    """
     response = requests.get(url, timeout=30)
     response.raise_for_status()
 
     with open(local_path, "wb") as file:
         file.write(response.content)
 
-
+# Upload downloaded images to S3 bucket
 def upload_file_to_s3(local_path, bucket_name, s3_key, s3_client):
+     """
+    Uploads the local image file to the destination S3 bucket.
+    Includes the ContentType extra argument to ensure correct browser rendering.
+    
+    Source: Boto3 S3 Client upload_file documentation 
+    (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/upload_file.html)
+    """
     s3_client.upload_file(
         local_path,
         bucket_name,
@@ -58,8 +70,11 @@ def upload_file_to_s3(local_path, bucket_name, s3_key, s3_client):
         ExtraArgs={"ContentType": get_content_type(local_path)}
     )
 
-
+# 
 def get_content_type(file_path):
+    """
+    Helper function to map file extensions to MIME types for S3 metadata.
+    """
     lower_path = file_path.lower()
     if lower_path.endswith(".png"):
         return "image/png"
@@ -69,8 +84,14 @@ def get_content_type(file_path):
         return "image/webp"
     return "application/octet-stream"
 
-
+# Main function that operates download and upload 
 def main():
+    """
+    Orchestrates the image processing pipeline:
+    1. Reads music data.
+    2. Downloads unique artist images.
+    3. Uploads files to S3 with sanitized naming.
+    """
     os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
     songs = load_songs(JSON_FILE)
@@ -90,13 +111,9 @@ def main():
                 skipped_count += 1
                 print(f"Skipped duplicate artist image: {artist}")
                 continue
-
-            #file_extension = get_file_extension_from_url(image_url)
-            #safe_artist = safe_file_name(artist)
-
+            
             safe_artist = image_url.split("/")[-1]
 
-            #local_file_name = f"{safe_artist}{file_extension}"
             local_file_name = f"{safe_artist}"
             local_file_path = os.path.join(DOWNLOAD_FOLDER, local_file_name)
 

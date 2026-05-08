@@ -1,3 +1,7 @@
+# Source: Run our Flask app with gunicorn in Docker
+# Adapted from: https://rest-apis-flask.teclado.com/docs/deploy_to_render/docker_with_gunicorn/
+# Modified for: Creating docker file for Gunicorn Flask webapp 
+
 # Use a lightweight official Python image
 # This reduces image size and improves deployment speed
 FROM python:3.12-slim
