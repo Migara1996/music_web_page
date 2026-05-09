@@ -1,5 +1,5 @@
 from decimal import Decimal
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify # Import libraries of flask web framework
 from flask_cors import CORS
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -12,8 +12,15 @@ app = Flask(__name__)
 # This is useful during development when frontend and backend run on different URLs.
 CORS(app)
 
-# AWS region where your DynamoDB tables and S3 bucket exist.
+# AWS region where DynamoDB tables and S3 bucket exist.
 REGION = "us-east-1"
+
+# AWS S3 image object path
+S3_IMAGE_BASE_URL = "https://a2-s3music.s3.us-east-1.amazonaws.com/artist-images/"
+
+# Source: AWS Boto3 Documentation
+# Adapted from: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/dynamodb.html
+# Modified for: connecting to music application tables
 
 # Create a DynamoDB resource object.
 # On EC2, boto3 can use the instance role credentials automatically if LabRole is attached.
@@ -49,7 +56,7 @@ def serialize_item(item):
         return [serialize_item(v) for v in item]
     return convert_decimal(item)
 
-############################################################
+
 def split_first(value):
     """
     Split a composite key value like 'album#title' or 'year#title'
@@ -62,7 +69,7 @@ def split_first(value):
 
 def enrich_music_item(item):
     """
-    Your new music table does not store album and year separately.
+    music table does not store album and year separately.
     This function reconstructs album and year from:
     - album_title = album#title
     - year_title = year#title
@@ -80,25 +87,46 @@ def enrich_music_item(item):
 
     return item
 
-############################################################
 
 def make_song_key(song):
     """
     Build a unique composite key for the subscriptions table.
     This helps prevent the same user subscribing to the same song multiple times.
     """
-    #return f"{song['artist']}#{song['year']}#{song['album']}#{song['title']}"
     return f"{song['artist']}#{song['album']}#{song['title']}"
 
 
+def convert_to_s3_image_url(image_url):
+    """
+    Extract image name from image url and return it as S3 object url
+    This function helps to access artist images from S3 bucket
+    """
+    image_name = image_url.split("/")[-1]    
+    return S3_IMAGE_BASE_URL + image_name
+
+
+# Backend running check for EC2
+# @app.route("/", methods=["GET"])
+# def home():
+#     """
+#     Simple health-check route.
+#     Useful for confirming the backend is running on EC2.
+#     """
+#     return jsonify({"message": "EC2 Flask backend is running"}), 200
+
+# Backend running check for ECS
 @app.route("/", methods=["GET"])
 def home():
     """
     Simple health-check route.
-    Useful for confirming the backend is running on EC2.
+    Useful for confirming the backend is running on ECS.
     """
-    return jsonify({"message": "EC2 Flask backend is running"}), 200
+    return jsonify({"message": "ECS Flask backend is running"}), 200
 
+
+# Source: Flask HTTP methods, handle GET & POST requests
+# Adapted from: https://www.geeksforgeeks.org/python/flask-http-methods-handle-get-post-requests/
+# Modified for: Make GET, POST & DELETE HTTP methods
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -192,86 +220,9 @@ def register():
         return jsonify({"message": e.response["Error"]["Message"]}), 500
 
 
-# @app.route("/query", methods=["GET"])
-# def query_music():
-#     """
-#     Query songs based on title, year, artist, and album.
-#     At least one field must be provided.
-
-#     Multiple conditions are treated as AND logic.
-#     """
-#     title = request.args.get("title", "").strip()
-#     year = request.args.get("year", "").strip()
-#     artist = request.args.get("artist", "").strip()
-#     album = request.args.get("album", "").strip()
-
-#     if not title and not year and not artist and not album:
-#         return jsonify({"message": "Please enter at least one search field."}), 400
-
-#     try:
-#         items = []
-
-#         # If artist is present, use Query on the base table or LSI.
-#         if artist:
-#             if album:
-#                 # Query the LSI designed for artist + album access pattern.
-#                 response = music_table.query(
-#                     IndexName="album-index",
-#                     KeyConditionExpression=Key("artist").eq(artist) & Key("album_year_title").begins_with(f"{album}#")
-#                 )
-#                 items = response.get("Items", [])
-#             else:
-#                 # Query all songs for an artist.
-#                 response = music_table.query(
-#                     KeyConditionExpression=Key("artist").eq(artist)
-#                 )
-#                 items = response.get("Items", [])
-
-#         # If title is present and artist is not, use the GSI.
-#         elif title:
-#             response = music_table.query(
-#                 IndexName="title-index",
-#                 KeyConditionExpression=Key("title").eq(title)
-#             )
-#             items = response.get("Items", [])
-
-#         # If the search pattern does not match a key/index path well,
-#         # fall back to Scan. Your assignment explicitly says to use both Query and Scan appropriately.
-#         else:
-#             response = music_table.scan()
-#             items = response.get("Items", [])
-
-#         # Apply remaining filters in Python so all conditions behave as AND.
-#         filtered_items = []
-#         for item in items:
-#             match = True
-
-#             if title and item.get("title", "").lower() != title.lower():
-#                 match = False
-
-#             if artist and item.get("artist", "").lower() != artist.lower():
-#                 match = False
-
-#             if album and item.get("album", "").lower() != album.lower():
-#                 match = False
-
-#             if year and str(item.get("year", "")) != str(year):
-#                 match = False
-
-#             if match:
-#                 filtered_items.append(serialize_item(item))
-
-#         if not filtered_items:
-#             return jsonify({
-#                 "message": "No result is retrieved. Please query again",
-#                 "results": []
-#             }), 404
-
-#         return jsonify({"results": filtered_items}), 200
-
-#     except ClientError as e:
-#         return jsonify({"message": e.response["Error"]["Message"]}), 500
-##########################
+# Source: AWS Boto3 Documentation
+# Adapted from: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/dynamodb.html
+# Modified for: query and scan operations
 
 @app.route("/query", methods=["GET"])
 def query_music():
@@ -279,7 +230,7 @@ def query_music():
     Query songs based on title, year, artist, and album.
     At least one field must be provided.
 
-    New music table schema:
+    music table schema:
     Base table:
         PK = artist
         SK = album_title  -> album#title
@@ -313,21 +264,11 @@ def query_music():
                 items = response.get("Items", [])
 
             elif year:
-                # Efficient query for artist + year using LSI.
-                # Make sure your LSI name matches this name.
-                
-                # response = music_table.query(
-                #     IndexName="album-index",
-                #     KeyConditionExpression=Key("artist").eq(artist) &
-                #     Key("year_title").begins_with(f"{year}#")
-                # )
-
-                # items = response.get("Items", [])
-
-                        # artist + year + title
+                # Efficient query for artist + year  & artist + year + title using LSI.
+                                
                 if title:
                     response = music_table.query(
-                        IndexName="album-index",  # replace with your actual LSI/GSI name
+                        IndexName="album-index", 
                         KeyConditionExpression=
                             Key("artist").eq(artist) &
                             Key("year_title").eq(f"{year}#{title}")
@@ -336,7 +277,7 @@ def query_music():
                 # artist + year only
                 else:
                     response = music_table.query(
-                        IndexName="album-index",  # replace with your actual LSI/GSI name
+                        IndexName="album-index",  
                         KeyConditionExpression=
                             Key("artist").eq(artist) &
                             Key("year_title").begins_with(f"{year}#")
@@ -360,9 +301,7 @@ def query_music():
             items = response.get("Items", [])
 
         else:
-            # For album-only or year-only searches, use Scan.
-            # This is acceptable because the assignment asks both Query and Scan
-            # to be used appropriately.
+            # For album-only or year-only searches, use Scan.                        
             response = music_table.scan()
             items = response.get("Items", [])
 
@@ -385,7 +324,11 @@ def query_music():
                 match = False
 
             if match:
+                enriched_item["image_url"] = convert_to_s3_image_url(
+                    enriched_item.get("image_url", "")
+                )
                 filtered_items.append(enriched_item)
+                
 
         if not filtered_items:
             return jsonify({
@@ -400,7 +343,6 @@ def query_music():
 
 
 
-##########################
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
     """
@@ -547,5 +489,5 @@ def remove_subscription():
 
 if __name__ == "__main__":
     # Debug mode is fine for local testing.
-    # For EC2 production access, run with Gunicorn instead of flask run.
+    # For EC2 & ECS production access, run with Gunicorn instead of flask run.
     app.run(host="0.0.0.0", port=5000, debug=True)

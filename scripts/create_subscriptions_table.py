@@ -1,11 +1,25 @@
 import boto3
 from botocore.exceptions import ClientError
 
+# AWS region where DynamoDB table can create
 REGION = "us-east-1"
+# Table name
 TABLE_NAME = "subscriptions"
+
+# Source: GitHub Repository - Rachel Hagerman
+# Adapted from: https://github.com/awsdocs/aws-doc-sdk-examples/blob/ee9be1b447b7036892505d36dea33b2e2409b422/python/example_code/dynamodb/GettingStarted/scenario_getting_started_movies.py#L101
+# Modified for: creating subscriptions table
 
 
 def create_subscriptions_table():
+    """
+    Creates the 'subscriptions' table in DynamoDB.
+    This table tracks which users have subscribed to which songs, enabling the 
+    'Subscription Area' functionality in the web application.
+    
+    The schema uses a 1:N relationship design where one email can be linked 
+    to multiple song unique identifiers.
+    """
     dynamodb = boto3.resource("dynamodb", region_name=REGION)
 
     try:
@@ -18,23 +32,11 @@ def create_subscriptions_table():
             AttributeDefinitions=[
                 {"AttributeName": "email", "AttributeType": "S"},
                 {"AttributeName": "song_key", "AttributeType": "S"}
-                #{"AttributeName": "album_title", "AttributeType": "S"}
+                
             ],
 
-            # Local Secondary Index (LSI)
-            # LocalSecondaryIndexes=[
-            #     {
-            #         "IndexName": "album_title-index",
-            #         "KeySchema": [
-            #             {"AttributeName": "email", "KeyType": "HASH"},
-            #             {"AttributeName": "album_title", "KeyType": "RANGE"}
-            #         ],
-            #         "Projection": {
-            #             "ProjectionType": "ALL"
-            #         }
-            #     }
-            # ],
-
+            
+            # Set the read/write capacity units
             ProvisionedThroughput={
                 "ReadCapacityUnits": 5,
                 "WriteCapacityUnits": 5

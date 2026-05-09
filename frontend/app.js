@@ -1,9 +1,22 @@
-const API_BASE_URL = "http://music-projectALB-834083227.us-east-1.elb.amazonaws.com";
+const API_BASE_URL = "http://music-projectALB-1110571390.us-east-1.elb.amazonaws.com";
 
-function getCurrentPage() {
+
+/**
+ * Source: JavaScript Tutorial
+ * Adapted from: Adapted from: https://www.geeksforgeeks.org/javascript/javascript-tutorial/
+ * Modified for: creating our js file  
+*/
+
+//  Utility: Identifies the current view to trigger relevant page-specific logic
+ function getCurrentPage() {
   return window.location.pathname.split("/").pop();
 }
 
+/**
+ * Session Management: Uses sessionStorage to persist user identity across views
+ * Source: MDN Web Docs - Window.sessionStorage
+ * Adapted from: (https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage)
+ */
 function saveUserSession(user) {
   sessionStorage.setItem("user", JSON.stringify(user));
 }
@@ -13,7 +26,7 @@ function getUserSession() {
   return user ? JSON.parse(user) : null;
 }
 
-/////////////////////////////////////////////
+//UI Cleanup: Ensures input fields are cleared to prevent stale data display.
 function clearLoginForm() {
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
@@ -22,12 +35,15 @@ function clearLoginForm() {
   if (passwordInput) passwordInput.value = "";
 }
 
-
 function clearUserSession() {
   sessionStorage.clear();
 }
-////////////////////////////////////////////
 
+/**
+ * Authentication: Handles Login form submission via Async Fetch
+ * Source: MDN Web Docs - Using the Fetch API
+ * Adapted from: (https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)
+ */
 async function handleLogin(event) {
   event.preventDefault();
 
@@ -61,6 +77,8 @@ async function handleLogin(event) {
   }
 }
 
+
+//Authentication: Handles New User Registration
 async function handleRegister(event) {
   event.preventDefault();
 
@@ -90,6 +108,10 @@ async function handleRegister(event) {
   }
 }
 
+/**
+ * Dynamic UI Template: Generates the HTML card structure for song items
+ * Uses template literals for clean property injection
+ */
 function renderSongCard(song, actionLabel, actionHandler) {
   const card = document.createElement("div");
   card.className = "song-card";
@@ -111,6 +133,8 @@ function renderSongCard(song, actionLabel, actionHandler) {
   return card;
 }
 
+
+ //Data Retrieval: Fetches and renders the user's current music subscriptions
 async function loadSubscriptions() {
   const user = getUserSession();
   const subscriptionList = document.getElementById("subscriptionList");
@@ -141,6 +165,10 @@ async function loadSubscriptions() {
   }
 }
 
+/**
+ * Search Logic: Queries the music table based on user input
+ * Filters are appended as URL parameters for the GET request
+ */
 async function handleQuery(event) {
   event.preventDefault();
 
@@ -184,6 +212,7 @@ async function handleQuery(event) {
   }
 }
 
+//Write Operation: Adds a song to the user's DynamoDB subscription table
 async function subscribeSong(song) {
   const user = getUserSession();
   if (!user) return;
@@ -204,6 +233,7 @@ async function subscribeSong(song) {
   }
 }
 
+//Delete Operation: Removes a song from the user's subscriptions
 async function removeSubscription(song) {
   const user = getUserSession();
   if (!user) return;
@@ -225,6 +255,7 @@ async function removeSubscription(song) {
   }
 }
 
+//Initialization: Populates user data and attaches listeners for main.html
 function setupMainPage() {
   const user = getUserSession();
 
@@ -260,6 +291,7 @@ function setupMainPage() {
   loadSubscriptions();
 }
 
+//Entry Point: Route-based event listener registration
 document.addEventListener("DOMContentLoaded", function () {
   const page = getCurrentPage();
 
@@ -280,7 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-
+//Navigation Guard: Ensures forms are cleared and sessions are valid on history navigation
 window.addEventListener("pageshow", function () {
   const page = getCurrentPage();
 

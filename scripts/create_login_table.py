@@ -1,10 +1,12 @@
 import boto3
 from botocore.exceptions import ClientError
 
+# AWS region where DynamoDB table can create
 REGION = "us-east-1"
+# Table name
 TABLE_NAME = "login"
 
-# Replace these with your actual 10 records from image.png
+# Define 10 users and upload it to the login table in DynamoDB
 LOGIN_ITEMS = [
     {"email": "s4111605@student.rmit.edu.au", "user_name": "MigaraVidanalage0", "password": "012345"},
     {"email": "s4111606@student.rmit.edu.au", "user_name": "DilrukshiPerera1", "password": "123456"},
@@ -18,8 +20,19 @@ LOGIN_ITEMS = [
     {"email": "s4111614@student.rmit.edu.au", "user_name": "SajanaFernando9", "password": "901234"},
 ]
 
+# Source: GitHub Repository - Rachel Hagerman
+# Adapted from: https://github.com/awsdocs/aws-doc-sdk-examples/blob/ee9be1b447b7036892505d36dea33b2e2409b422/python/example_code/dynamodb/GettingStarted/scenario_getting_started_movies.py#L101
+# Modified for: creating login table and uploading 10 users
+
 
 def create_table_and_insert():
+    """
+    Initializes a connection to DynamoDB, creates the 'login' table if it doesn't exist,
+    and populates it with initial user records.
+    
+    Adapted from: Boto3 Documentation - DynamoDB.ServiceResource.create_table
+    (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.ServiceResource.create_table)
+    """
     dynamodb = boto3.resource("dynamodb", region_name=REGION)
 
     try:
@@ -28,7 +41,7 @@ def create_table_and_insert():
             TableName=TABLE_NAME,
             KeySchema=[
                 {
-                    "AttributeName": "email",
+                    "AttributeName": "email", # Partition Key
                     "KeyType": "HASH"
                 }
             ],
